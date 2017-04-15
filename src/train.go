@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+
+	"github.com/boltdb/bolt"
 )
 
 func startTraining() {
@@ -28,52 +31,63 @@ func startTraining() {
 func trainOnSentence() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("Training sentence (type nothing to stop) (You need EOF): ")
-		done, trained := processString(reader)
-		if done {
+		fmt.Print("Training sentence (type nothing to stop): ")
+		s, err := reader.ReadBytes('\n')
+		if err != nil || len(s) <= 1 {
+			fmt.Println("Halt.")
 			break
 		}
-		if trained {
+
+		if processString(s) {
 			fmt.Println("Trained.")
 		}
 	}
 }
 
-func processString(r *bufio.Reader) (done, trained bool) {
-	list := make([]string, gramNum)
-	index := 1
+var textOnlyRegex = regexp.MustCompile("[^a-zA-Z]{2,}") //Matches non english characters, greedy
+func processString(inputBytes []byte) (trained bool) {
+	//Replace all with a single spaces
+	inputString := string(textOnlyRegex.ReplaceAll(inputBytes, []byte(" ")))
 
-	var err error
-	list[0], err = r.ReadString(' ')
-	list[0] = strings.TrimSpace(list[0])
-	if err != nil {
-		fmt.Println("Halted.")
-		return true, false
+	wordList := strings.Split(inputString, " ")
+
+	if len(wordList) < gramNum {
+		fmt.Println("Not enough words in string.")
+		return false
 	}
 
-	//Fill the array first
-	for ; err == nil && index < gramNum; index++ {
-		list[index], err = r.ReadString(' ')
-		list[index] = strings.TrimSpace(list[index])
-	}
+	err := myBoltDB.Update(func(tx *bolt.Tx) error {
+		for i := 0; i < len(wordList)-gramNum; i++ {
+			//Get the first bucket
+			currBucket, err := tx.CreateBucketIfNotExists([]byte(dbBucketName))
 
-	if index < gramNum {
-		//Not enough item filled
-		fmt.Println("Not enough items in string.")
-		return false, false
-	}
+			if err != nil {
+				return err
+			}
 
-	//Start processing
-	for err == nil {
+			for j := 0; j < gramNum-1; j++ {
+				//Nest into the deepest bucket
+				currBucket, err = currBucket.CreateBucketIfNotExists([]byte(wordList[i+j]))
+				if err != nil {
+					return err
+				}
+			}
 
-		for i := 1; i < gramNum; i++ {
-			list[i-1] = list[i]
+			gotByteArray := currBucket.Get([]byte(wordList[i+gramNum-1]))
+			if gotByteArray == nil {
+				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(0))
+			} else {
+				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(byteArrayToInt(gotByteArray)))
+			}
 		}
 
-		list[gramNum-1], err = r.ReadString(' ')
-		list[gramNum-1] = strings.TrimSpace(list[gramNum-1])
-		fmt.Println(list)
+		return nil
+	})
+
+	if err != nil {
+		fmt.Println("Error in inserting words into database")
+		panic(err)
 	}
 
-	return false, true
+	return true
 }
