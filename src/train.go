@@ -75,9 +75,9 @@ func processString(inputBytes []byte) (trained bool) {
 
 			gotByteArray := currBucket.Get([]byte(wordList[i+gramNum-1]))
 			if gotByteArray == nil {
-				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(0))
+				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(1))
 			} else {
-				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(byteArrayToInt(gotByteArray)))
+				currBucket.Put([]byte(wordList[i+gramNum-1]), intToByteArray(byteArrayToInt(gotByteArray)+1))
 			}
 		}
 
