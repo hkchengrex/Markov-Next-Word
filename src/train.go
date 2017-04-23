@@ -7,24 +7,24 @@ import (
 	"regexp"
 	"strings"
 
+	"io/ioutil"
+
+	"path/filepath"
+
 	"github.com/boltdb/bolt"
 )
 
-func startTraining() {
-	fmt.Println()
-	fmt.Println("1. Manual Input")
-	fmt.Println("2. Read from file")
-	fmt.Print("Give me your choice: ")
+func trainFile(filePattern string) {
+	filePaths, err := filepath.Glob(filePattern)
+	if err != nil {
+		panic(err)
+	}
 
-	var choice int
-	fmt.Scanln(&choice)
-
-	if choice == 1 {
-		trainOnSentence()
-	} else if choice == 2 {
-
-	} else {
-		panic("Wrong input. Panicking.")
+	for _, file := range filePaths {
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

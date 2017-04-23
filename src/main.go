@@ -1,36 +1,35 @@
 package main
 
 import "fmt"
+import "os"
 
 const gramNum = 3
 
 func main() {
 	fmt.Println("Next-word prediction using Markov's Chain.")
-	fmt.Println("1. Train on new data.")
-	fmt.Println("2. Predict based on trained database.")
-	fmt.Print("Give me your choice: ")
 
-	var choice int
-	fmt.Scanln(&choice)
+	arguments := os.Args[1:]
 
-	if choice == 1 {
-		fmt.Println()
-		fmt.Println("Input the name of the database. Using an existing database would train the model based on existing data.")
-		var dbName string
-		fmt.Scanln(&dbName)
-		openDatabase(dbName)
+	if len(arguments) < 3 {
+		//At least operation, database name and data set
+		fmt.Println("Usage: [operation] [database] [dataset]")
+		os.Exit(0)
+	}
+
+	operation := arguments[0]
+	dbName := arguments[1]
+	openDatabase(dbName)
+	defer closeDatabase()
+
+	if operation == "train" {
 		startTraining()
-		defer closeDatabase()
 
-	} else if choice == 2 {
-		fmt.Println()
-		fmt.Println("Name of the dataset to be used: ")
-		var dbName string
-		fmt.Scanln(&dbName)
-		openDatabase(dbName)
-		defer closeDatabase()
+	} else if operation == "predict" {
+
+	} else if operation == "compare" {
 
 	} else {
-		panic("Wrong input. Panicking.")
+		fmt.Println("Operation " + operation + " not supported.")
+		os.Exit(0)
 	}
 }
