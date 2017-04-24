@@ -3,7 +3,7 @@ package main
 import "fmt"
 import "os"
 
-const gramNum = 3
+const gramNum = 4
 
 func main() {
 	fmt.Println("Next-word prediction using Markov's Chain.")
@@ -22,7 +22,11 @@ func main() {
 	defer closeDatabase()
 
 	if operation == "train" {
-		startTraining()
+		allFiles := arguments[2:]
+		for _, f := range allFiles {
+			trainFile(f)
+		}
+	} else if operation == "write" {
 
 	} else if operation == "predict" {
 
