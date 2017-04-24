@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"io/ioutil"
 
@@ -13,7 +14,8 @@ import (
 func trainFile(filePattern string) {
 	filePaths, err := filepath.Glob(filePattern)
 	if err != nil {
-		panic(err)
+		fmt.Println("Cannot process " + filePattern)
+		return
 	}
 
 	for _, file := range filePaths {
@@ -33,7 +35,7 @@ func trainFile(filePattern string) {
 
 func processString(inputBytes []byte) (trained bool) {
 	//Replace all with a single spaces
-	inputRunes := []rune(string(inputBytes))
+	inputRunes := []rune("\n" + strings.Replace(string(inputBytes), "\r\n", "\n", -1))
 
 	err := myBoltDB.Update(func(tx *bolt.Tx) error {
 		for i := 0; i < len(inputRunes)-gramNum; i++ {
@@ -64,7 +66,7 @@ func processString(inputBytes []byte) (trained bool) {
 	})
 
 	if err != nil {
-		panic(err)
+		return false
 	}
 
 	return true

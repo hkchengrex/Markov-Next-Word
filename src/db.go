@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 
-	"os"
-
 	"github.com/boltdb/bolt"
 )
 
@@ -12,10 +10,8 @@ var myBoltDB *bolt.DB
 var dbBucketName string
 
 func openDatabase(name string) {
-	os.Mkdir("/db", 0700)
-
 	var err error
-	myBoltDB, err = bolt.Open("/db/"+name+".bolt", 0600, nil)
+	myBoltDB, err = bolt.Open(name, 0600, nil)
 	if err != nil {
 		fmt.Println("Error in opening database: ", name)
 		panic(err)
