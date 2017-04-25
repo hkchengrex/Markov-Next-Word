@@ -35,30 +35,26 @@ func trainFile(filePattern string) {
 
 func processString(inputBytes []byte) (trained bool) {
 	//Replace all with a single spaces
-	inputRunes := []rune("\n" + strings.Replace(string(inputBytes), "\r\n", "\n", -1))
+	inputRunes := []rune(obtainStartOfText() + strings.Replace(string(inputBytes), "\r\n", "\n", -1) + obtainEndOfText())
 
 	err := myBoltDB.Update(func(tx *bolt.Tx) error {
-		for i := 0; i < len(inputRunes)-gramNum; i++ {
-			//Get the first bucket
-			currBucket, err := tx.CreateBucketIfNotExists([]byte(dbBucketName))
+		rootBucket, err := tx.CreateBucketIfNotExists([]byte(dbBucketName))
+		if err != nil {
+			return err
+		}
 
+		for i := 0; i < len(inputRunes)-gramNum+1; i++ {
+			destBucket, err := rootBucket.CreateBucketIfNotExists([]byte(string(inputRunes[i : i+gramNum-1])))
 			if err != nil {
 				return err
 			}
 
-			for j := 0; j < gramNum-1; j++ {
-				//Nest into the deepest bucket
-				currBucket, err = currBucket.CreateBucketIfNotExists([]byte(string(inputRunes[i+j])))
-				if err != nil {
-					return err
-				}
-			}
-
-			gotByteArray := currBucket.Get([]byte(string(inputRunes[i+gramNum-1])))
+			keyBytes := []byte(string(inputRunes[i+gramNum-1]))
+			gotByteArray := destBucket.Get(keyBytes)
 			if gotByteArray == nil {
-				currBucket.Put([]byte(string(inputRunes[i+gramNum-1])), intToByteArray(1))
+				destBucket.Put((keyBytes), intToByteArray(1))
 			} else {
-				currBucket.Put([]byte(string(inputRunes[i+gramNum-1])), intToByteArray(byteArrayToInt(gotByteArray)+1))
+				destBucket.Put((keyBytes), intToByteArray(byteArrayToInt(gotByteArray)+1))
 			}
 		}
 
@@ -68,6 +64,5 @@ func processString(inputBytes []byte) (trained bool) {
 	if err != nil {
 		return false
 	}
-
 	return true
 }

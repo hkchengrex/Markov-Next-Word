@@ -21,70 +21,52 @@ func writeForLength(length int) string {
 			cdf int
 		}
 
-		rootRunes := make([]rune, gramNum)
-		rootRunes[0] = '\n'
-		currBucket := rootBucket
-		//Create root set
-		for i := 1; i < gramNum-1; i++ {
-			var rootCandidate []pair
+		rootString := obtainStartOfText()
+
+		for ch := 0; ch < length; ch++ {
+			currBucket := rootBucket.Bucket([]byte(rootString))
+			if currBucket == nil {
+				return errors.New(rootString + " Not found.")
+			}
+
+			var candidate []pair
 			sum := 0
 			currBucket.ForEach(func(k, v []byte) error {
-				fmt.Println(len(string(k)))
-				fmt.Println(len([]rune(string(k))))
-				fmt.Println([]rune(string(k))[0])
-				fmt.Println(len(v))
 				num := byteArrayToInt(v)
 				sum += num
-				rootCandidate = append(rootCandidate, pair{[]rune(string(k))[0], sum})
+				candidate = append(candidate, pair{[]rune(string(k))[0], sum})
 				return nil
 			})
 
 			randPick := rand.Intn(sum)
-			for _, v := range rootCandidate {
+			var picked rune
+			for _, v := range candidate {
 				if v.cdf > randPick {
-					rootRunes[i] = v.key
+					picked = v.key
 					break
 				}
 			}
-		}
 
-		for ch := 0; ch < length; ch++ {
-			for i := 0; i < gramNum; i++ {
-				currBucket = currBucket.Bucket([]byte(string(rootRunes[i])))
-				if currBucket == nil {
-					return errors.New("Not found.")
-				}
-
-				var candidate []pair
-				sum := 0
-				currBucket.ForEach(func(k, v []byte) error {
-					num := byteArrayToInt(v)
-					sum += num
-					candidate = append(candidate, pair{[]rune(string(k))[0], sum})
-					return nil
-				})
-
-				randPick := rand.Intn(sum)
-				for _, v := range candidate {
-					if v.cdf > randPick {
-						rootRunes[i] = v.key
-						break
-					}
-				}
+			if picked == rune(3) {
+				//If end of text is reached
+				break
 			}
 
 			//Output one rune
-			result += string(rootRunes[gramNum-1])
-			for i := 0; i < gramNum-1; i++ {
-				rootRunes[i] = rootRunes[i+1]
+			result += string(picked)
+			r := []rune(rootString)
+			for i := 0; i < gramNum-2; i++ {
+				r[i] = r[i+1]
 			}
+			r[gramNum-2] = picked
+			rootString = string(r)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return ""
+		panic(err)
 	}
 
 	return result
